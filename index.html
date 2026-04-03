@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>ATS Scanner</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #070711;
+      color: #fff;
+      font-family: 'Segoe UI', sans-serif;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 70% 50% at 20% 10%, rgba(124,58,237,0.20) 0%, transparent 60%),
+        radial-gradient(ellipse 55% 40% at 80% 85%, rgba(13,207,184,0.14) 0%, transparent 55%);
+      pointer-events: none;
+    }
+
+    .header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      padding: 16px 20px;
+      padding-top: calc(16px + env(safe-area-inset-top));
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 10;
+      background: linear-gradient(to bottom, rgba(7,7,17,0.95) 0%, transparent 100%);
+    }
+    .logo {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .logo span { color: #0DCFB8; }
+    .close-btn {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: rgba(255,255,255,0.7);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .content {
+      width: 100%;
+      max-width: 400px;
+      padding: 0 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── Viewfinder ── */
+    .vf-wrap {
+      width: 100%;
+      max-width: 320px;
+      display: none;
+    }
+    .vf-border {
+      border-radius: 20px;
+      overflow: hidden;
+      border: 2px solid #0DCFB8;
+      box-shadow: 0 0 0 4px rgba(13,207,184,0.12), 0 0 40px rgba(13,207,184,0.25);
+      aspect-ratio: 1;
+      background: #000;
+      position: relative;
+    }
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .scan-line {
+      position: absolute;
+      left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, #0DCFB8 30%, #7C3AED 70%, transparent);
+      box-shadow: 0 0 10px rgba(13,207,184,0.8);
+      z-index: 5;
+      animation: scanLine 2s ease-in-out infinite;
+    }
+    @keyframes scanLine {
+      0%   { top: 8%;  opacity: 0; }
+      5%   { opacity: 1; }
+      95%  { opacity: 1; }
+      100% { top: 88%; opacity: 0; }
+    }
+    .corner { position: absolute; width: 22px; height: 22px; z-index: 6; }
+    .corner-tl { top:10px;    left:10px;  border-top:3px solid #0DCFB8;    border-left:3px solid #0DCFB8;   border-radius:4px 0 0 0; }
+    .corner-tr { top:10px;    right:10px; border-top:3px solid #0DCFB8;    border-right:3px solid #0DCFB8;  border-radius:0 4px 0 0; }
+    .corner-bl { bottom:10px; left:10px;  border-bottom:3px solid #0DCFB8; border-left:3px solid #0DCFB8;   border-radius:0 0 0 4px; }
+    .corner-br { bottom:10px; right:10px; border-bottom:3px solid #0DCFB8; border-right:3px solid #0DCFB8;  border-radius:0 0 4px 0; }
+
+    /* ── Status ── */
+    .status {
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #0DCFB8;
+      text-align: center;
+      display: none;
+    }
+
+    /* ── Loader ── */
+    .loader {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid rgba(13,207,184,0.15);
+      border-top-color: #0DCFB8;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loader-text {
+      font-size: 11px;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.45);
+      text-align: center;
+    }
+
+    /* ── Result ── */
+    .result-card {
+      display: none;
+      width: 100%;
+      background: rgba(34,211,160,0.08);
+      border: 1px solid rgba(34,211,160,0.35);
+      border-radius: 14px;
+      padding: 20px;
+      text-align: center;
+      animation: fadeIn 0.25s ease both;
+    }
+    .result-card.show { display: block; }
+    .result-id {
+      font-size: 26px;
+      font-weight: 700;
+      color: #22D3A0;
+      margin-bottom: 6px;
+    }
+    .result-sub {
+      font-size: 10px;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.40);
+    }
+
+    /* ── Error ── */
+    .error-card {
+      display: none;
+      width: 100%;
+      background: rgba(244,63,94,0.08);
+      border: 1px solid rgba(244,63,94,0.30);
+      border-radius: 14px;
+      padding: 20px;
+      text-align: center;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .error-card.show { display: flex; }
+    .error-title { font-size: 15px; font-weight: 700; color: #F43F5E; }
+    .error-msg   { font-size: 12px; color: rgba(255,255,255,0.55); line-height: 1.6; white-space: pre-line; }
+    .retry-btn {
+      padding: 10px 24px;
+      border-radius: 8px;
+      background: rgba(124,58,237,0.20);
+      border: 1px solid rgba(124,58,237,0.40);
+      color: #9D5FF3;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.06em;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* ── Permission button ── */
+    .perm-btn {
+      padding: 14px 28px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #7C3AED, #0DCFB8);
+      border: none;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      box-shadow: 0 0 20px rgba(124,58,237,0.4);
+      -webkit-tap-highlight-color: transparent;
+      display: none;
+    }
+    .perm-btn.show { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity:0; transform:translateY(6px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+
+    .hint {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      padding: 16px 20px;
+      padding-bottom: calc(16px + env(safe-area-inset-bottom));
+      text-align: center;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.18);
+      background: linear-gradient(to top, rgba(7,7,17,0.9) 0%, transparent 100%);
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="logo">AESTHETIC<span>.</span></div>
+    <button class="close-btn" onclick="closePage()">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+           fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="18" y1="6" x2="6" y2="18"/>
+        <line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="content">
+
+    <!-- Loader -->
+    <div class="loader" id="loader">
+      <div class="spinner"></div>
+      <div class="loader-text" id="loader-text">Requesting camera...</div>
+    </div>
+
+    <!-- Permission button — shown if browser doesn't auto-prompt -->
+    <button class="perm-btn" id="perm-btn" onclick="requestCamera()">
+      Tap to Open Camera
+    </button>
+
+    <!-- Viewfinder -->
+    <div class="vf-wrap" id="vf-wrap">
+      <div class="vf-border">
+        <div class="scan-line"></div>
+        <div class="corner corner-tl"></div>
+        <div class="corner corner-tr"></div>
+        <div class="corner corner-bl"></div>
+        <div class="corner corner-br"></div>
+        <video id="video" playsinline autoplay muted></video>
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div class="status" id="status">Point camera at barcode</div>
+
+    <!-- Result -->
+    <div class="result-card" id="result-card">
+      <div class="result-id" id="result-id">--</div>
+      <div class="result-sub">Scanned · Sending to app...</div>
+    </div>
+
+    <!-- Error -->
+    <div class="error-card" id="error-card">
+      <div class="error-title" id="error-title">Camera Error</div>
+      <div class="error-msg"   id="error-msg">Could not access camera.</div>
+      <button class="retry-btn" onclick="requestCamera()">Try Again</button>
+    </div>
+
+  </div>
+
+  <div class="hint">ATS Scanner · AceSheets</div>
+
+  <script>
+    var _stream      = null;
+    var _detecting   = false;
+    var _resultSent  = false;
+    var _animFrame   = null;
+    var _detector    = null;
+    var _useDetector = false;
+
+    function gel(id) { return document.getElementById(id); }
+
+    /* ── UI state helpers ── */
+    function showLoader(msg) {
+      gel('loader').style.display    = 'flex';
+      gel('perm-btn').classList.remove('show');
+      gel('vf-wrap').style.display   = 'none';
+      gel('status').style.display    = 'none';
+      gel('result-card').classList.remove('show');
+      gel('error-card').classList.remove('show');
+      if (msg) gel('loader-text').textContent = msg;
+    }
+
+    function showPermBtn() {
+      gel('loader').style.display    = 'none';
+      gel('perm-btn').classList.add('show');
+      gel('vf-wrap').style.display   = 'none';
+      gel('status').style.display    = 'none';
+      gel('error-card').classList.remove('show');
+    }
+
+    function showViewfinder() {
+      gel('loader').style.display    = 'none';
+      gel('perm-btn').classList.remove('show');
+      gel('error-card').classList.remove('show');
+      gel('result-card').classList.remove('show');
+      gel('vf-wrap').style.display   = 'block';
+      gel('status').style.display    = 'block';
+    }
+
+    function showError(title, msg) {
+      stopAll();
+      gel('loader').style.display    = 'none';
+      gel('perm-btn').classList.remove('show');
+      gel('vf-wrap').style.display   = 'none';
+      gel('status').style.display    = 'none';
+      gel('error-title').textContent = title;
+      gel('error-msg').textContent   = msg;
+      gel('error-card').classList.add('show');
+    }
+
+    function showResult(scannedId) {
+      stopAll();
+      gel('vf-wrap').style.display   = 'none';
+      gel('status').style.display    = 'none';
+      gel('loader').style.display    = 'none';
+      gel('result-id').textContent   = scannedId;
+      gel('result-card').classList.add('show');
+    }
+
+    /* ── Request camera via raw getUserMedia ── */
+    function requestCamera() {
+      showLoader('Opening camera...');
+
+      var constraints = {
+        video: {
+          facingMode: { ideal: 'environment' },
+          width:  { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: false
+      };
+
+      navigator.mediaDevices.getUserMedia(constraints)
+        .then(function(stream) {
+          _stream = stream;
+          var video = gel('video');
+          video.srcObject = stream;
+
+          /* On Infinix/budget Android, need to wait for 'canplay' */
+          video.addEventListener('canplay', function onCanPlay() {
+            video.removeEventListener('canplay', onCanPlay);
+            video.play()
+              .then(function() {
+                showViewfinder();
+                initDetector();
+              })
+              .catch(function(e) {
+                showError('Playback Error', 'Camera opened but video failed to play.\n' + e.message);
+              });
+          });
+
+          /* Fallback if canplay takes too long */
+          setTimeout(function() {
+            if (gel('vf-wrap').style.display === 'none' && _stream) {
+              video.play().catch(function() {});
+              showViewfinder();
+              initDetector();
+            }
+          }, 2000);
+        })
+        .catch(function(err) {
+          var msg = (err && err.message ? err.message : String(err)).toLowerCase();
+          var isPermission = msg.indexOf('permission') !== -1 ||
+                             msg.indexOf('denied')     !== -1 ||
+                             msg.indexOf('notallowed') !== -1 ||
+                             msg.indexOf('not allowed') !== -1;
+          if (isPermission) {
+            showError(
+              'Camera Permission Denied',
+              'Please allow camera access:\n1. Tap lock icon in browser bar\n2. Set Camera → Allow\n3. Tap Try Again'
+            );
+          } else if (msg.indexOf('notfound') !== -1 || msg.indexOf('not found') !== -1) {
+            showError('No Camera Found', 'No camera detected on this device.');
+          } else {
+            /* Some browsers need a user gesture first — show tap button */
+            showPermBtn();
+          }
+        });
+    }
+
+    /* ── Init barcode detector ── */
+    function initDetector() {
+      /* Try native BarcodeDetector first — fastest on Android Chrome */
+      if ('BarcodeDetector' in window) {
+        BarcodeDetector.getSupportedFormats().then(function(formats) {
+          if (formats.indexOf('code_128') !== -1) {
+            _detector    = new BarcodeDetector({ formats: ['code_128'] });
+            _useDetector = true;
+            _detecting   = true;
+            detectLoop();
+            return;
+          }
+          fallbackToLib();
+        }).catch(function() {
+          fallbackToLib();
+        });
+      } else {
+        fallbackToLib();
+      }
+    }
+
+    /* ── Native BarcodeDetector scan loop ── */
+    function detectLoop() {
+      if (!_detecting) return;
+      var video = gel('video');
+      if (!video || video.readyState < 2) {
+        _animFrame = requestAnimationFrame(detectLoop);
+        return;
+      }
+      _detector.detect(video)
+        .then(function(barcodes) {
+          if (barcodes && barcodes.length > 0) {
+            var code = barcodes[0].rawValue;
+            if (code) { onScanSuccess(code); return; }
+          }
+          _animFrame = requestAnimationFrame(detectLoop);
+        })
+        .catch(function() {
+          _animFrame = requestAnimationFrame(detectLoop);
+        });
+    }
+
+    /* ── Fallback: html5-qrcode library ── */
+    function fallbackToLib() {
+      gel('loader-text').textContent = 'Loading scanner...';
+      gel('loader').style.display   = 'flex';
+      gel('vf-wrap').style.display  = 'none';
+
+      /* Stop raw stream — html5-qrcode will manage its own */
+      stopStream();
+
+      var s    = document.createElement('script');
+      s.src    = 'https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js';
+      s.onload = startLibScanner;
+      s.onerror = function() {
+        showError('Load Error', 'Scanner library failed to load.\nCheck your internet and try again.');
+      };
+      document.head.appendChild(s);
+    }
+
+    function startLibScanner() {
+      try {
+        /* Need a fresh div — create one */
+        var oldDiv = gel('qr-lib-reader');
+        if (oldDiv) oldDiv.remove();
+        var div  = document.createElement('div');
+        div.id   = 'qr-lib-reader';
+        div.style.display = 'none';
+        document.body.appendChild(div);
+
+        var scanner = new Html5Qrcode('qr-lib-reader');
+        scanner.start(
+          { facingMode: 'environment' },
+          {
+            fps              : 15,
+            qrbox            : { width: 280, height: 100 },
+            formatsToSupport : [ Html5QrcodeSupportedFormats.CODE_128 ],
+            experimentalFeatures: { useBarCodeDetectorIfSupported: true }
+          },
+          function(decoded) { onScanSuccess(decoded); },
+          function() {}
+        )
+        .then(function() {
+          showViewfinder();
+          /* point viewfinder video at lib's video element */
+          var libVideo = document.querySelector('#qr-lib-reader video');
+          if (libVideo) {
+            gel('video').srcObject = libVideo.srcObject;
+          }
+        })
+        .catch(function(err) {
+          showError('Scanner Error', err && err.message ? err.message : 'Could not start scanner.');
+        });
+
+      } catch(e) {
+        showError('Scanner Error', e.message || 'Could not start scanner.');
+      }
+    }
+
+    /* ── Scan success handler ── */
+    function onScanSuccess(decodedText) {
+      if (_resultSent) return;
+      _resultSent = true;
+
+      var scannedId = decodedText.trim();
+      showResult(scannedId);
+
+      /* Send to main app */
+      if (window.opener && !window.opener.closed) {
+        window.opener.postMessage(
+          { type: 'ATS_SCAN_RESULT', productId: scannedId },
+          '*'
+        );
+      }
+
+      setTimeout(function() { window.close(); }, 1200);
+    }
+
+    /* ── Cleanup ── */
+    function stopStream() {
+      if (_animFrame) { cancelAnimationFrame(_animFrame); _animFrame = null; }
+      _detecting = false;
+      if (_stream) {
+        _stream.getTracks().forEach(function(t) { t.stop(); });
+        _stream = null;
+      }
+    }
+
+    function stopAll() {
+      stopStream();
+      var video = gel('video');
+      if (video) { video.srcObject = null; }
+    }
+
+    function closePage() {
+      stopAll();
+      window.close();
+    }
+
+    /* ── Boot ── */
+    /* Check if browser supports getUserMedia at all */
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      document.addEventListener('DOMContentLoaded', function() {
+        showError(
+          'Browser Not Supported',
+          'Your browser does not support camera access.\nPlease use Chrome or update your browser.'
+        );
+      });
+    } else {
+      /* On some Android browsers, getUserMedia needs a user gesture.
+         We try immediately — if it fails we show the tap button. */
+      document.addEventListener('DOMContentLoaded', function() {
+        requestCamera();
+      });
+    }
+
+    window.addEventListener('beforeunload', stopAll);
+  </script>
+
+</body>
+</html>
