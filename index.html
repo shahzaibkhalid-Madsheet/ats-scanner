@@ -407,7 +407,8 @@
       if (redirectUrl) {
         // Redirect mode — used when opened as iframe or when postMessage is blocked
         setTimeout(function() {
-          window.location.href = redirectUrl + '&scan=' + encodeURIComponent(scannedId);
+          var separator = redirectUrl.indexOf('?') !== -1 ? '&' : '?';
+          window.location.href = redirectUrl + separator + 'scan=' + encodeURIComponent(scannedId);
         }, 800);
       } else if (window.opener && !window.opener.closed) {
         // Popup mode — desktop
@@ -429,7 +430,8 @@
       var urlParams   = new URLSearchParams(window.location.search);
       var redirectUrl = urlParams.get('redirect');
       if (redirectUrl) {
-        window.location.href = redirectUrl + '&scan=cancelled';
+        var separator = redirectUrl.indexOf('?') !== -1 ? '&' : '?';
+        window.location.href = redirectUrl + separator + 'scan=cancelled';
       } else {
         window.close();
       }
