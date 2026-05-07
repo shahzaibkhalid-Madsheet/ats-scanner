@@ -395,30 +395,39 @@
         }).catch(function(err) { showError('Scanner Error', err && err.message ? err.message : 'Could not start scanner.'); });
       } catch(e) { showError('Scanner Error', e.message || 'Could not start scanner.'); }
     }
+
     function onScanSuccess(decodedText) {
-      if (_resultSent) return;
-      _resultSent = true;
-      var scannedId = decodedText.trim();
-      showResult(scannedId);
+  if (_resultSent) return;
+  _resultSent = true;
+  var scannedId = decodedText.trim();
+  showResult(scannedId);
+
+  var isIframe = (window.self !== window.top);
+
+  if (isIframe) {
+    // Preferred path — postMessage to parent, no redirect
+    try {
+      window.parent.postMessage({ type: 'ATS_SCAN_RESULT', productId: scannedId }, '*');
+    } catch(e) {}
+    // No redirect needed — parent closes the overlay
+    return;
+  }
+
+  // Fallback: top-level redirect (old mobile flow)
+  var urlParams   = new URLSearchParams(window.location.search);
+  var redirectUrl = urlParams.get('redirect');
+  if (redirectUrl) {
+    setTimeout(function() {
+      var separator = redirectUrl.indexOf('?') !== -1 ? '&' : '?';
+      window.location.href = redirectUrl + separator + 'scan=' + encodeURIComponent(scannedId);
+    }, 800);
+  } else if (window.opener && !window.opener.closed) {
+    window.opener.postMessage({ type: 'ATS_SCAN_RESULT', productId: scannedId }, '*');
+    setTimeout(function() { window.close(); }, 1200);
+  }
+}
+
     
-      var urlParams  = new URLSearchParams(window.location.search);
-      var redirectUrl = urlParams.get('redirect');
-    
-      if (redirectUrl) {
-        // Redirect mode — used when opened as iframe or when postMessage is blocked
-        setTimeout(function() {
-          var separator = redirectUrl.indexOf('?') !== -1 ? '&' : '?';
-          window.location.href = redirectUrl + separator + 'scan=' + encodeURIComponent(scannedId);
-        }, 800);
-      } else if (window.opener && !window.opener.closed) {
-        // Popup mode — desktop
-        window.opener.postMessage({ type: 'ATS_SCAN_RESULT', productId: scannedId }, '*');
-        setTimeout(function() { window.close(); }, 1200);
-      } else {
-        // Fallback — just close
-        setTimeout(function() { window.close(); }, 1200);
-      }
-    }
     function stopStream() {
       if (_animFrame) { cancelAnimationFrame(_animFrame); _animFrame = null; }
       _detecting = false;
@@ -426,16 +435,22 @@
     }
     function stopAll() { stopStream(); var video = gel('video'); if (video) { video.srcObject = null; } }
     function closePage() {
-      stopAll();
-      var urlParams   = new URLSearchParams(window.location.search);
-      var redirectUrl = urlParams.get('redirect');
-      if (redirectUrl) {
-        var separator = redirectUrl.indexOf('?') !== -1 ? '&' : '?';
-        window.location.href = redirectUrl + separator + 'scan=cancelled';
-      } else {
-        window.close();
-      }
-    }
+  stopAll();
+  var isIframe = (window.self !== window.top);
+  if (isIframe) {
+    try { window.parent.postMessage({ type: 'ATS_SCAN_RESULT', productId: 'cancelled' }, '*'); } catch(e) {}
+    return;
+  }
+  // Top-level fallback (old redirect flow)
+  var urlParams   = new URLSearchParams(window.location.search);
+  var redirectUrl = urlParams.get('redirect');
+  if (redirectUrl) {
+    var separator = redirectUrl.indexOf('?') !== -1 ? '&' : '?';
+    window.location.href = redirectUrl + separator + 'scan=cancelled';
+  } else {
+    window.close();
+  }
+}
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       document.addEventListener('DOMContentLoaded', function() { showError('Browser Not Supported', 'Your browser does not support camera access.\nPlease use Chrome or update your browser.'); });
