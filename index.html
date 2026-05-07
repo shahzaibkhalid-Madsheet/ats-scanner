@@ -400,8 +400,23 @@
       _resultSent = true;
       var scannedId = decodedText.trim();
       showResult(scannedId);
-      if (window.opener && !window.opener.closed) { window.opener.postMessage({ type: 'ATS_SCAN_RESULT', productId: scannedId }, '*'); }
-      setTimeout(function() { window.close(); }, 1200);
+    
+      var urlParams  = new URLSearchParams(window.location.search);
+      var redirectUrl = urlParams.get('redirect');
+    
+      if (redirectUrl) {
+        // Redirect mode — used when opened as iframe or when postMessage is blocked
+        setTimeout(function() {
+          window.location.href = redirectUrl + '&scan=' + encodeURIComponent(scannedId);
+        }, 800);
+      } else if (window.opener && !window.opener.closed) {
+        // Popup mode — desktop
+        window.opener.postMessage({ type: 'ATS_SCAN_RESULT', productId: scannedId }, '*');
+        setTimeout(function() { window.close(); }, 1200);
+      } else {
+        // Fallback — just close
+        setTimeout(function() { window.close(); }, 1200);
+      }
     }
     function stopStream() {
       if (_animFrame) { cancelAnimationFrame(_animFrame); _animFrame = null; }
