@@ -424,7 +424,16 @@
       if (_stream) { _stream.getTracks().forEach(function(t) { t.stop(); }); _stream = null; }
     }
     function stopAll() { stopStream(); var video = gel('video'); if (video) { video.srcObject = null; } }
-    function closePage() { stopAll(); window.close(); }
+    function closePage() {
+      stopAll();
+      var urlParams   = new URLSearchParams(window.location.search);
+      var redirectUrl = urlParams.get('redirect');
+      if (redirectUrl) {
+        window.location.href = redirectUrl + '&scan=cancelled';
+      } else {
+        window.close();
+      }
+    }
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       document.addEventListener('DOMContentLoaded', function() { showError('Browser Not Supported', 'Your browser does not support camera access.\nPlease use Chrome or update your browser.'); });
