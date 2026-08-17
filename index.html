@@ -356,7 +356,7 @@
     function initDetector() {
       if ('BarcodeDetector' in window) {
         BarcodeDetector.getSupportedFormats().then(function(formats) {
-          if (formats.indexOf('code_128') !== -1) { _detector = new BarcodeDetector({ formats: ['code_128'] }); _useDetector = true; _detecting = true; detectLoop(); return; }
+          if (formats.indexOf('code_128') !== -1) { _detector = new BarcodeDetector({ formats: ['code_128', 'qr_code'] }); _useDetector = true; _detecting = true; detectLoop(); return; }
           fallbackToLib();
         }).catch(function() { fallbackToLib(); });
       } else { fallbackToLib(); }
