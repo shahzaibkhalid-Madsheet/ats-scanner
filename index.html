@@ -354,13 +354,16 @@
         });
     }
     function initDetector() {
-      if ('BarcodeDetector' in window) {
-        BarcodeDetector.getSupportedFormats().then(function(formats) {
-          if (formats.indexOf('code_128') !== -1) { _detector = new BarcodeDetector({ formats: ['code_128', 'qr_code'] }); _useDetector = true; _detecting = true; detectLoop(); return; }
-          fallbackToLib();
-        }).catch(function() { fallbackToLib(); });
-      } else { fallbackToLib(); }
-    }
+  if ('BarcodeDetector' in window) {
+    BarcodeDetector.getSupportedFormats().then(function(formats) {
+      var supported = [];
+      if (formats.indexOf('code_128') !== -1) supported.push('code_128');
+      if (formats.indexOf('qr_code') !== -1) supported.push('qr_code');
+      if (supported.length > 0) { _detector = new BarcodeDetector({ formats: supported }); _useDetector = true; _detecting = true; detectLoop(); return; }
+      fallbackToLib();
+    }).catch(function() { fallbackToLib(); });
+  } else { fallbackToLib(); }
+}
     function detectLoop() {
       if (!_detecting) return;
       var video = gel('video');
