@@ -389,7 +389,7 @@
         var oldDiv = gel('qr-lib-reader'); if (oldDiv) oldDiv.remove();
         var div = document.createElement('div'); div.id = 'qr-lib-reader'; div.style.display = 'none'; document.body.appendChild(div);
         var scanner = new Html5Qrcode('qr-lib-reader');
-        scanner.start({ facingMode: 'environment' }, { fps: 15, qrbox: { width: 280, height: 100 }, formatsToSupport: [Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.QR_CODE], experimentalFeatures: { useBarCodeDetectorIfSupported: true } },
+        scanner.start({ facingMode: 'environment' }, { fps: 15, qrbox: { width: 280, height: 100 }, formatsToSupport: [Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.QR_CODE], experimentalFeatures: { useBarCodeDetectorIfSupported: false } },
           function(decoded) { onScanSuccess(decoded); }, function() {})
         .then(function() {
           showViewfinder();
