@@ -385,19 +385,50 @@
       document.head.appendChild(s);
     }
     function startLibScanner() {
-      try {
-        var oldDiv = gel('qr-lib-reader'); if (oldDiv) oldDiv.remove();
-        var div = document.createElement('div'); div.id = 'qr-lib-reader'; div.style.display = 'none'; document.body.appendChild(div);
-        var scanner = new Html5Qrcode('qr-lib-reader');
-        scanner.start({ facingMode: 'environment' }, { fps: 15, qrbox: { width: 280, height: 100 }, formatsToSupport: [Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.QR_CODE], experimentalFeatures: { useBarCodeDetectorIfSupported: false } },
-          function(decoded) { onScanSuccess(decoded); }, function() {})
-        .then(function() {
-          showViewfinder();
-          var libVideo = document.querySelector('#qr-lib-reader video');
-          if (libVideo) { gel('video').srcObject = libVideo.srcObject; }
-        }).catch(function(err) { showError('Scanner Error', err && err.message ? err.message : 'Could not start scanner.'); });
-      } catch(e) { showError('Scanner Error', e.message || 'Could not start scanner.'); }
-    }
+  try {
+    var oldDiv = gel('qr-lib-reader'); if (oldDiv) oldDiv.remove();
+    var div = document.createElement('div');
+    div.id = 'qr-lib-reader';
+    // don't hide it — we'll style it directly instead of copying the stream
+    document.body.appendChild(div);
+
+    var scanner = new Html5Qrcode('qr-lib-reader');
+    scanner.start(
+      { facingMode: 'environment' },
+      {
+        fps: 10, // lower fps = more processing time per frame on iOS, helps 1D decode
+        qrbox: { width: 280, height: 140 }, // slightly taller box, more tolerant of barcode tilt
+        aspectRatio: 1.0,
+        videoConstraints: {
+          facingMode: 'environment',
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+          advanced: [{ focusMode: 'continuous' }] // ignored where unsupported, helps where it is
+        },
+        formatsToSupport: [Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.QR_CODE],
+        experimentalFeatures: { useBarCodeDetectorIfSupported: false }
+      },
+      function(decoded) { onScanSuccess(decoded); },
+      function() {}
+    ).then(function() {
+      // move the library's own video into your styled viewfinder instead of stream-copying
+      var libVideo = document.querySelector('#qr-lib-reader video');
+      if (libVideo) {
+        libVideo.setAttribute('playsinline', 'true');
+        libVideo.style.width = '100%';
+        libVideo.style.height = '100%';
+        libVideo.style.objectFit = 'cover';
+        gel('vf-wrap').querySelector('.vf-border').insertBefore(libVideo, gel('vf-wrap').querySelector('.scan-line'));
+        gel('video').style.display = 'none'; // hide your original <video>, use the lib's directly
+      }
+      showViewfinder();
+    }).catch(function(err) {
+      showError('Scanner Error', err && err.message ? err.message : 'Could not start scanner.');
+    });
+  } catch(e) {
+    showError('Scanner Error', e.message || 'Could not start scanner.');
+  }
+}
 
     function onScanSuccess(decodedText) {
   if (_resultSent) return;
