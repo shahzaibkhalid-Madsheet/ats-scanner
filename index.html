@@ -365,6 +365,13 @@
     function gel(id) { return document.getElementById(id); }
 
     function isIOS() {
+      // Testing override: append ?forceMode=ios or ?forceMode=android to any URL
+      // to force a specific scan path regardless of the real device. Remove/ignore
+      // this block if you don't want testers able to override in production.
+      var forced = new URLSearchParams(window.location.search).get('forceMode');
+      if (forced === 'ios') return true;
+      if (forced === 'android') return false;
+
       var ua = navigator.userAgent || '';
       var iOSDevice = /iPad|iPhone|iPod/.test(ua);
       var iPadOS13Up = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
