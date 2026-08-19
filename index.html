@@ -42,12 +42,7 @@
       z-index: 10;
       background: linear-gradient(to bottom, rgba(238,242,255,0.95) 0%, transparent 100%);
     }
-    .logo {
-      font-size: 16px;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      color: #1E1B4B;
-    }
+    .logo { font-size: 16px; font-weight: 700; letter-spacing: -0.02em; color: #1E1B4B; }
     .logo span { color: #6366F1; }
     .close-btn {
       width: 36px; height: 36px;
@@ -74,11 +69,7 @@
       z-index: 1;
     }
 
-    .vf-wrap {
-      width: 100%;
-      max-width: 320px;
-      display: none;
-    }
+    .vf-wrap { width: 100%; max-width: 320px; display: none; }
     .vf-border {
       border-radius: 20px;
       overflow: hidden;
@@ -88,9 +79,8 @@
       background: #000;
       position: relative;
     }
-    video {
-      width: 100%;
-      height: 100%;
+    video, .captured-img {
+      width: 100%; height: 100%;
       object-fit: cover;
       display: block;
     }
@@ -123,12 +113,7 @@
       display: none;
     }
 
-    .loader {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 14px;
-    }
+    .loader { display: flex; flex-direction: column; align-items: center; gap: 14px; }
     .spinner {
       width: 40px; height: 40px;
       border: 3px solid rgba(99,102,241,0.15);
@@ -156,18 +141,8 @@
       animation: fadeIn 0.25s ease both;
     }
     .result-card.show { display: block; }
-    .result-id {
-      font-size: 26px;
-      font-weight: 700;
-      color: #10B981;
-      margin-bottom: 6px;
-    }
-    .result-sub {
-      font-size: 10px;
-      letter-spacing: 0.10em;
-      text-transform: uppercase;
-      color: #6B7280;
-    }
+    .result-id { font-size: 26px; font-weight: 700; color: #10B981; margin-bottom: 6px; }
+    .result-sub { font-size: 10px; letter-spacing: 0.10em; text-transform: uppercase; color: #6B7280; }
 
     .error-card {
       display: none;
@@ -197,7 +172,7 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    .perm-btn {
+    .perm-btn, .capture-btn {
       padding: 14px 28px;
       border-radius: 10px;
       background: linear-gradient(135deg, #6366F1, #06B6D4);
@@ -211,7 +186,70 @@
       -webkit-tap-highlight-color: transparent;
       display: none;
     }
-    .perm-btn.show { display: block; }
+    .perm-btn.show, .capture-btn.show { display: flex; align-items: center; gap: 8px; }
+
+    .capture-card {
+      display: none;
+      width: 100%;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      text-align: center;
+    }
+    .capture-card.show { display: flex; }
+    .capture-icon {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      background: rgba(99,102,241,0.08);
+      border: 1px solid rgba(99,102,241,0.18);
+      display: flex; align-items: center; justify-content: center;
+      color: #6366F1;
+    }
+    .capture-title { font-size: 14px; font-weight: 700; color: #1E1B4B; }
+    .capture-sub { font-size: 12px; color: #6B7280; line-height: 1.5; max-width: 280px; }
+
+    .manual-link {
+      font-size: 11px;
+      color: #9CA3AF;
+      text-decoration: underline;
+      cursor: pointer;
+      letter-spacing: 0.03em;
+      background: none;
+      border: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .manual-wrap {
+      display: none;
+      width: 100%;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .manual-wrap.show { display: flex; }
+    .manual-input {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(99,102,241,0.25);
+      background: #fff;
+      font-size: 15px;
+      text-align: center;
+      letter-spacing: 0.04em;
+      color: #1E1B4B;
+      text-transform: uppercase;
+    }
+    .manual-input:focus { outline: none; border-color: #6366F1; }
+    .manual-submit {
+      padding: 10px 24px;
+      border-radius: 8px;
+      background: #6366F1;
+      border: none;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.06em;
+    }
 
     @keyframes fadeIn {
       from { opacity:0; transform:translateY(6px); }
@@ -231,6 +269,8 @@
       background: linear-gradient(to top, rgba(238,242,255,0.9) 0%, transparent 100%);
       z-index: 10;
     }
+
+    #qr-lib-reader { display: none; }
   </style>
 </head>
 <body>
@@ -249,85 +289,182 @@
   <div class="content">
     <div class="loader" id="loader">
       <div class="spinner"></div>
-      <div class="loader-text" id="loader-text">Requesting camera...</div>
+      <div class="loader-text" id="loader-text">Starting scanner...</div>
     </div>
+
     <button class="perm-btn" id="perm-btn" onclick="requestCamera()">Tap to Open Camera</button>
+
+    <!-- iOS native-capture flow -->
+    <div class="capture-card" id="capture-card">
+      <div class="capture-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+          <circle cx="12" cy="13" r="4"/>
+        </svg>
+      </div>
+      <div class="capture-title">Take a Photo of the Barcode</div>
+      <div class="capture-sub">Hold your iPhone camera steady over the barcode label, make sure it's well lit, then tap the shutter.</div>
+      <button class="capture-btn show" id="capture-btn" onclick="triggerCapture()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+          <circle cx="12" cy="13" r="4"/>
+        </svg>
+        Open Camera
+      </button>
+    </div>
+    <input type="file" accept="image/*" capture="environment" id="file-input" style="display:none;">
+
     <div class="vf-wrap" id="vf-wrap">
       <div class="vf-border">
-        <div class="scan-line"></div>
+        <div class="scan-line" id="scan-line-el"></div>
         <div class="corner corner-tl"></div>
         <div class="corner corner-tr"></div>
         <div class="corner corner-bl"></div>
         <div class="corner corner-br"></div>
         <video id="video" playsinline autoplay muted></video>
+        <img class="captured-img" id="captured-img" style="display:none;">
       </div>
     </div>
     <div class="status" id="status">Point camera at barcode</div>
+
     <div class="result-card" id="result-card">
       <div class="result-id" id="result-id">--</div>
-      <div class="result-sub">Scanned · Sending to app...</div>
+      <div class="result-sub">Scanned &middot; Sending to app...</div>
     </div>
+
     <div class="error-card" id="error-card">
       <div class="error-title" id="error-title">Camera Error</div>
       <div class="error-msg"   id="error-msg">Could not access camera.</div>
-      <button class="retry-btn" onclick="requestCamera()">Try Again</button>
+      <button class="retry-btn" id="retry-btn" onclick="retryCurrentFlow()">Try Again</button>
     </div>
+
+    <div class="manual-wrap" id="manual-wrap">
+      <input type="text" class="manual-input" id="manual-input" placeholder="ATS-0000" maxlength="8">
+      <button class="manual-submit" onclick="submitManual()">Submit</button>
+    </div>
+    <button class="manual-link" id="manual-link" onclick="showManualEntry()">Enter code manually instead</button>
   </div>
 
   <div class="hint">ATS Scanner</div>
 
   <script>
-    var _stream      = null;
-    var _detecting   = false;
-    var _resultSent  = false;
-    var _animFrame   = null;
-    var _detector    = null;
-    var _useDetector = false;
+    var ID_FORMAT = /^ATS-\d{4}$/;
+
+    var _stream       = null;
+    var _detecting    = false;
+    var _resultSent   = false;
+    var _animFrame    = null;
+    var _detector     = null;
+    var _libLoaded    = false;
+    var _libScanner   = null;   // Html5Qrcode instance used for live fallback
+    var _fileScanner  = null;   // Html5Qrcode instance used for iOS still-photo decode
+    var _mode         = null;   // 'detector' | 'livelib' | 'iosphoto'
 
     function gel(id) { return document.getElementById(id); }
 
-    function showLoader(msg) {
-      gel('loader').style.display    = 'flex';
+    function isIOS() {
+      var ua = navigator.userAgent || '';
+      var iOSDevice = /iPad|iPhone|iPod/.test(ua);
+      var iPadOS13Up = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+      return iOSDevice || iPadOS13Up;
+    }
+
+    function normalizeId(text) { return (text || '').trim().toUpperCase(); }
+    function isValidId(text) { return ID_FORMAT.test(normalizeId(text)); }
+
+    // ---------- UI state helpers ----------
+    function hideAllPanels() {
+      gel('loader').style.display        = 'none';
       gel('perm-btn').classList.remove('show');
-      gel('vf-wrap').style.display   = 'none';
-      gel('status').style.display    = 'none';
+      gel('capture-card').classList.remove('show');
+      gel('vf-wrap').style.display       = 'none';
+      gel('status').style.display        = 'none';
       gel('result-card').classList.remove('show');
       gel('error-card').classList.remove('show');
+      gel('manual-wrap').classList.remove('show');
+    }
+    function showLoader(msg) {
+      hideAllPanels();
+      gel('loader').style.display = 'flex';
       if (msg) gel('loader-text').textContent = msg;
+      gel('manual-link').style.display = 'none';
     }
     function showPermBtn() {
-      gel('loader').style.display    = 'none';
+      hideAllPanels();
       gel('perm-btn').classList.add('show');
-      gel('vf-wrap').style.display   = 'none';
-      gel('status').style.display    = 'none';
-      gel('error-card').classList.remove('show');
+      gel('manual-link').style.display = 'block';
+    }
+    function showCapturePrompt() {
+      hideAllPanels();
+      gel('capture-card').classList.add('show');
+      gel('manual-link').style.display = 'block';
     }
     function showViewfinder() {
-      gel('loader').style.display    = 'none';
-      gel('perm-btn').classList.remove('show');
-      gel('error-card').classList.remove('show');
-      gel('result-card').classList.remove('show');
-      gel('vf-wrap').style.display   = 'block';
-      gel('status').style.display    = 'block';
+      hideAllPanels();
+      gel('scan-line-el').style.display = 'block';
+      gel('captured-img').style.display = 'none';
+      gel('video').style.display = 'block';
+      gel('vf-wrap').style.display = 'block';
+      gel('status').style.display = 'block';
+      gel('status').textContent = 'Point camera at barcode';
+      gel('manual-link').style.display = 'block';
     }
-    function showError(title, msg) {
+    function showDecodingPhoto(imgUrl) {
+      hideAllPanels();
+      gel('vf-wrap').style.display = 'block';
+      gel('scan-line-el').style.display = 'none';
+      gel('video').style.display = 'none';
+      var img = gel('captured-img');
+      img.src = imgUrl;
+      img.style.display = 'block';
+      gel('status').style.display = 'block';
+      gel('status').textContent = 'Reading barcode...';
+      gel('manual-link').style.display = 'block';
+    }
+    function showError(title, msg, retryLabel) {
       stopAll();
-      gel('loader').style.display    = 'none';
-      gel('perm-btn').classList.remove('show');
-      gel('vf-wrap').style.display   = 'none';
-      gel('status').style.display    = 'none';
+      hideAllPanels();
       gel('error-title').textContent = title;
       gel('error-msg').textContent   = msg;
+      gel('retry-btn').textContent   = retryLabel || 'Try Again';
       gel('error-card').classList.add('show');
+      gel('manual-link').style.display = 'block';
     }
     function showResult(scannedId) {
       stopAll();
-      gel('vf-wrap').style.display   = 'none';
-      gel('status').style.display    = 'none';
-      gel('loader').style.display    = 'none';
-      gel('result-id').textContent   = scannedId;
+      hideAllPanels();
+      gel('result-id').textContent = scannedId;
       gel('result-card').classList.add('show');
+      gel('manual-link').style.display = 'none';
     }
+
+    // ---------- entry point ----------
+    document.addEventListener('DOMContentLoaded', function() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        if (isIOS()) {
+          // Even without getUserMedia, native file-input capture still works on iOS.
+          _mode = 'iosphoto';
+          showCapturePrompt();
+        } else {
+          showError('Browser Not Supported', 'Your browser does not support camera access.\nPlease use Chrome or update your browser.');
+        }
+        return;
+      }
+
+      if (isIOS()) {
+        // Skip getUserMedia entirely on iOS: live Safari preview is low-res and
+        // unreliable for 1D barcodes. Native camera capture gives full-res, focused stills.
+        _mode = 'iosphoto';
+        showCapturePrompt();
+      } else {
+        requestCamera();
+      }
+    });
+    window.addEventListener('beforeunload', stopAll);
+
+    // ---------- Android / desktop: live getUserMedia flow ----------
     function requestCamera() {
       showLoader('Opening camera...');
       var constraints = { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false };
@@ -348,150 +485,241 @@
         .catch(function(err) {
           var msg = (err && err.message ? err.message : String(err)).toLowerCase();
           var isPermission = msg.indexOf('permission') !== -1 || msg.indexOf('denied') !== -1 || msg.indexOf('notallowed') !== -1 || msg.indexOf('not allowed') !== -1;
-          if (isPermission) { showError('Camera Permission Denied', 'Please allow camera access:\n1. Tap lock icon in browser bar\n2. Set Camera → Allow\n3. Tap Try Again'); }
+          if (isPermission) { showError('Camera Permission Denied', 'Please allow camera access:\n1. Tap lock icon in browser bar\n2. Set Camera to Allow\n3. Tap Try Again'); }
           else if (msg.indexOf('notfound') !== -1 || msg.indexOf('not found') !== -1) { showError('No Camera Found', 'No camera detected on this device.'); }
           else { showPermBtn(); }
         });
     }
+
     function initDetector() {
-  if ('BarcodeDetector' in window) {
-    BarcodeDetector.getSupportedFormats().then(function(formats) {
-      var supported = [];
-      if (formats.indexOf('code_128') !== -1) supported.push('code_128');
-      if (formats.indexOf('qr_code') !== -1) supported.push('qr_code');
-      if (supported.length > 0) { _detector = new BarcodeDetector({ formats: supported }); _useDetector = true; _detecting = true; detectLoop(); return; }
-      fallbackToLib();
-    }).catch(function() { fallbackToLib(); });
-  } else { fallbackToLib(); }
-}
+      if ('BarcodeDetector' in window) {
+        BarcodeDetector.getSupportedFormats().then(function(formats) {
+          var supported = [];
+          if (formats.indexOf('code_128') !== -1) supported.push('code_128');
+          if (formats.indexOf('qr_code') !== -1) supported.push('qr_code');
+          if (supported.length > 0) {
+            _detector = new BarcodeDetector({ formats: supported });
+            _mode = 'detector';
+            _detecting = true;
+            detectLoop();
+            return;
+          }
+          fallbackToLiveLib();
+        }).catch(function() { fallbackToLiveLib(); });
+      } else {
+        fallbackToLiveLib();
+      }
+    }
+
     function detectLoop() {
       if (!_detecting) return;
       var video = gel('video');
       if (!video || video.readyState < 2) { _animFrame = requestAnimationFrame(detectLoop); return; }
       _detector.detect(video).then(function(barcodes) {
-        if (barcodes && barcodes.length > 0) { var code = barcodes[0].rawValue; if (code) { onScanSuccess(code); return; } }
+        if (barcodes && barcodes.length > 0) {
+          var code = barcodes[0].rawValue;
+          if (code && isValidId(code)) { onScanSuccess(normalizeId(code)); return; }
+        }
         _animFrame = requestAnimationFrame(detectLoop);
       }).catch(function() { _animFrame = requestAnimationFrame(detectLoop); });
     }
-    function fallbackToLib() {
-      gel('loader-text').textContent = 'Loading scanner...';
-      gel('loader').style.display   = 'flex';
-      gel('vf-wrap').style.display  = 'none';
-      stopStream();
+
+    // ---------- fallback: live JS decode (rare browsers without BarcodeDetector) ----------
+    function loadLibIfNeeded(cb) {
+      if (_libLoaded && window.Html5Qrcode) { cb(); return; }
       var s = document.createElement('script');
       s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js';
-      s.onload = startLibScanner;
+      s.onload = function() { _libLoaded = true; cb(); };
       s.onerror = function() { showError('Load Error', 'Scanner library failed to load.\nCheck your internet and try again.'); };
       document.head.appendChild(s);
     }
+
+    function fallbackToLiveLib() {
+      _mode = 'livelib';
+      gel('loader-text').textContent = 'Loading scanner...';
+      showLoader('Loading scanner...');
+      stopStream();
+      loadLibIfNeeded(startLibScanner);
+    }
+
     function startLibScanner() {
-  try {
-    var oldDiv = gel('qr-lib-reader'); if (oldDiv) oldDiv.remove();
-    var div = document.createElement('div');
-    div.id = 'qr-lib-reader';
-    // don't hide it — we'll style it directly instead of copying the stream
-    document.body.appendChild(div);
+      try {
+        var oldDiv = gel('qr-lib-reader'); if (oldDiv) oldDiv.remove();
+        var div = document.createElement('div');
+        div.id = 'qr-lib-reader';
+        document.body.appendChild(div);
 
-    var scanner = new Html5Qrcode('qr-lib-reader');
-    scanner.start(
-      { facingMode: 'environment' },
-      {
-        fps: 10, // lower fps = more processing time per frame on iOS, helps 1D decode
-        qrbox: { width: 280, height: 140 }, // slightly taller box, more tolerant of barcode tilt
-        aspectRatio: 1.0,
-        videoConstraints: {
-          facingMode: 'environment',
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
-          advanced: [{ focusMode: 'continuous' }] // ignored where unsupported, helps where it is
-        },
-        formatsToSupport: [Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.QR_CODE],
-        experimentalFeatures: { useBarCodeDetectorIfSupported: false }
-      },
-      function(decoded) { onScanSuccess(decoded); },
-      function() {}
-    ).then(function() {
-      // move the library's own video into your styled viewfinder instead of stream-copying
-      var libVideo = document.querySelector('#qr-lib-reader video');
-      if (libVideo) {
-        libVideo.setAttribute('playsinline', 'true');
-        libVideo.style.width = '100%';
-        libVideo.style.height = '100%';
-        libVideo.style.objectFit = 'cover';
-        gel('vf-wrap').querySelector('.vf-border').insertBefore(libVideo, gel('vf-wrap').querySelector('.scan-line'));
-        gel('video').style.display = 'none'; // hide your original <video>, use the lib's directly
+        _libScanner = new Html5Qrcode('qr-lib-reader');
+        _libScanner.start(
+          { facingMode: 'environment' },
+          {
+            fps: 10,
+            qrbox: { width: 280, height: 140 },
+            aspectRatio: 1.0,
+            videoConstraints: {
+              facingMode: 'environment',
+              width: { ideal: 1920 },
+              height: { ideal: 1080 },
+              advanced: [{ focusMode: 'continuous' }]
+            },
+            formatsToSupport: [Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.QR_CODE],
+            experimentalFeatures: { useBarCodeDetectorIfSupported: false }
+          },
+          function(decoded) {
+            if (isValidId(decoded)) onScanSuccess(normalizeId(decoded));
+            // invalid reads are ignored; scanner keeps running automatically
+          },
+          function() { /* per-frame no-read, ignore */ }
+        ).then(function() {
+          var libVideo = document.querySelector('#qr-lib-reader video');
+          if (libVideo) {
+            libVideo.setAttribute('playsinline', 'true');
+            libVideo.style.width = '100%';
+            libVideo.style.height = '100%';
+            libVideo.style.objectFit = 'cover';
+            gel('vf-wrap').querySelector('.vf-border').insertBefore(libVideo, gel('scan-line-el'));
+            gel('video').style.display = 'none';
+          }
+          showViewfinder();
+        }).catch(function(err) {
+          showError('Scanner Error', err && err.message ? err.message : 'Could not start scanner.');
+        });
+      } catch(e) {
+        showError('Scanner Error', e.message || 'Could not start scanner.');
       }
-      showViewfinder();
-    }).catch(function(err) {
-      showError('Scanner Error', err && err.message ? err.message : 'Could not start scanner.');
+    }
+
+    // ---------- iOS: native camera capture + still-image decode ----------
+    function triggerCapture() {
+      gel('file-input').value = ''; // allow re-selecting the same photo if retaking
+      gel('file-input').click();
+    }
+
+    gel('file-input').addEventListener('change', function(e) {
+      var file = e.target.files && e.target.files[0];
+      if (!file) return;
+
+      var imgUrl = URL.createObjectURL(file);
+      showDecodingPhoto(imgUrl);
+
+      loadLibIfNeeded(function() {
+        try {
+          var oldDiv = gel('qr-lib-reader'); if (oldDiv) oldDiv.remove();
+          var div = document.createElement('div');
+          div.id = 'qr-lib-reader';
+          document.body.appendChild(div);
+
+          _fileScanner = new Html5Qrcode('qr-lib-reader', {
+            formatsToSupport: [Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.QR_CODE],
+            verbose: false
+          });
+
+          _fileScanner.scanFile(file, false)
+            .then(function(decoded) {
+              if (isValidId(decoded)) {
+                onScanSuccess(normalizeId(decoded));
+              } else {
+                showError(
+                  'Could Not Read Barcode',
+                  "The photo didn't contain a valid ATS code.\nMake sure the barcode is sharp, flat, and well lit, then retake the photo.",
+                  'Retake Photo'
+                );
+              }
+            })
+            .catch(function() {
+              showError(
+                'Could Not Read Barcode',
+                'No barcode was detected in that photo.\nTry again with better lighting and hold the camera steady until it focuses.',
+                'Retake Photo'
+              );
+            });
+        } catch(err) {
+          showError('Scanner Error', err.message || 'Could not read the photo.', 'Retake Photo');
+        }
+      });
     });
-  } catch(e) {
-    showError('Scanner Error', e.message || 'Could not start scanner.');
-  }
-}
 
-    function onScanSuccess(decodedText) {
-  if (_resultSent) return;
-  _resultSent = true;
-  var scannedId = decodedText.trim();
-  showResult(scannedId);
+    // ---------- manual entry ----------
+    function showManualEntry() {
+      hideAllPanels();
+      gel('manual-wrap').classList.add('show');
+      gel('manual-link').style.display = 'none';
+      gel('manual-input').focus();
+    }
+    function submitManual() {
+      var val = normalizeId(gel('manual-input').value);
+      if (!isValidId(val)) {
+        gel('manual-input').style.borderColor = '#EF4444';
+        return;
+      }
+      onScanSuccess(val);
+    }
 
-  var isIframe = (window.self !== window.top);
+    // ---------- retry router ----------
+    function retryCurrentFlow() {
+      if (_mode === 'iosphoto') { showCapturePrompt(); }
+      else if (_mode === 'livelib') { fallbackToLiveLib(); }
+      else { requestCamera(); }
+    }
 
-  if (isIframe) {
-    // Preferred path — postMessage to parent, no redirect
-    try {
-      window.parent.postMessage({ type: 'ATS_SCAN_RESULT', productId: scannedId }, '*');
-    } catch(e) {}
-    // No redirect needed — parent closes the overlay
-    return;
-  }
+    // ---------- shared success / messaging ----------
+    function onScanSuccess(scannedId) {
+      if (_resultSent) return;
+      _resultSent = true;
+      showResult(scannedId);
 
-  // Fallback: top-level redirect (old mobile flow)
-  var urlParams   = new URLSearchParams(window.location.search);
-  var redirectUrl = urlParams.get('redirect');
-  if (redirectUrl) {
-    setTimeout(function() {
-      var separator = redirectUrl.indexOf('?') !== -1 ? '&' : '?';
-      window.location.href = redirectUrl + separator + 'scan=' + encodeURIComponent(scannedId);
-    }, 800);
-  } else if (window.opener && !window.opener.closed) {
-    window.opener.postMessage({ type: 'ATS_SCAN_RESULT', productId: scannedId }, '*');
-    setTimeout(function() { window.close(); }, 1200);
-  }
-}
+      var isIframe = (window.self !== window.top);
 
-    
+      if (isIframe) {
+        try {
+          window.parent.postMessage({ type: 'ATS_SCAN_RESULT', productId: scannedId }, '*');
+        } catch(e) {}
+        return;
+      }
+
+      var urlParams   = new URLSearchParams(window.location.search);
+      var redirectUrl = urlParams.get('redirect');
+      if (redirectUrl) {
+        setTimeout(function() {
+          var separator = redirectUrl.indexOf('?') !== -1 ? '&' : '?';
+          window.location.href = redirectUrl + separator + 'scan=' + encodeURIComponent(scannedId);
+        }, 800);
+      } else if (window.opener && !window.opener.closed) {
+        window.opener.postMessage({ type: 'ATS_SCAN_RESULT', productId: scannedId }, '*');
+        setTimeout(function() { window.close(); }, 1200);
+      }
+    }
+
     function stopStream() {
       if (_animFrame) { cancelAnimationFrame(_animFrame); _animFrame = null; }
       _detecting = false;
+      if (_libScanner) {
+        try { _libScanner.stop().catch(function(){}); } catch(e) {}
+      }
       if (_stream) { _stream.getTracks().forEach(function(t) { t.stop(); }); _stream = null; }
     }
-    function stopAll() { stopStream(); var video = gel('video'); if (video) { video.srcObject = null; } }
-    function closePage() {
-  stopAll();
-  var isIframe = (window.self !== window.top);
-  if (isIframe) {
-    try { window.parent.postMessage({ type: 'ATS_SCAN_RESULT', productId: 'cancelled' }, '*'); } catch(e) {}
-    return;
-  }
-  // Top-level fallback (old redirect flow)
-  var urlParams   = new URLSearchParams(window.location.search);
-  var redirectUrl = urlParams.get('redirect');
-  if (redirectUrl) {
-    var separator = redirectUrl.indexOf('?') !== -1 ? '&' : '?';
-    window.location.href = redirectUrl + separator + 'scan=cancelled';
-  } else {
-    window.close();
-  }
-}
-
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      document.addEventListener('DOMContentLoaded', function() { showError('Browser Not Supported', 'Your browser does not support camera access.\nPlease use Chrome or update your browser.'); });
-    } else {
-      document.addEventListener('DOMContentLoaded', function() { requestCamera(); });
+    function stopAll() {
+      stopStream();
+      var video = gel('video');
+      if (video) { video.srcObject = null; }
     }
-    window.addEventListener('beforeunload', stopAll);
+
+    function closePage() {
+      stopAll();
+      var isIframe = (window.self !== window.top);
+      if (isIframe) {
+        try { window.parent.postMessage({ type: 'ATS_SCAN_RESULT', productId: 'cancelled' }, '*'); } catch(e) {}
+        return;
+      }
+      var urlParams   = new URLSearchParams(window.location.search);
+      var redirectUrl = urlParams.get('redirect');
+      if (redirectUrl) {
+        var separator = redirectUrl.indexOf('?') !== -1 ? '&' : '?';
+        window.location.href = redirectUrl + separator + 'scan=cancelled';
+      } else {
+        window.close();
+      }
+    }
   </script>
 
 </body>
