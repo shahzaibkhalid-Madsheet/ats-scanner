@@ -294,8 +294,8 @@
 
     <button class="perm-btn" id="perm-btn" onclick="requestCamera()">Tap to Open Camera</button>
 
-    <!-- iOS native-capture flow -->
-    <div class="capture-card" id="capture-card">
+    <!-- iOS native-capture flow: entire card is one tap target, not just the button -->
+    <div class="capture-card" id="capture-card" onclick="triggerCapture()" role="button" tabindex="0">
       <div class="capture-icon">
         <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24"
              fill="none" stroke="currentColor" stroke-width="2">
@@ -303,9 +303,9 @@
           <circle cx="12" cy="13" r="4"/>
         </svg>
       </div>
-      <div class="capture-title">Take a Photo of the Barcode</div>
-      <div class="capture-sub">Hold your iPhone camera steady over the barcode label, make sure it's well lit, then tap the shutter.</div>
-      <button class="capture-btn show" id="capture-btn" onclick="triggerCapture()">
+      <div class="capture-title">Tap Anywhere to Scan</div>
+      <div class="capture-sub">Your camera will open — frame the barcode and tap the shutter to capture.</div>
+      <button class="capture-btn show" id="capture-btn" onclick="event.stopPropagation(); triggerCapture()">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
              fill="none" stroke="currentColor" stroke-width="2.5">
           <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
@@ -465,6 +465,12 @@
         // unreliable for 1D barcodes. Native camera capture gives full-res, focused stills.
         _mode = 'iosphoto';
         showCapturePrompt();
+        // Best-effort: some mobile browsers still treat this load as part of the
+        // gesture that opened the page (e.g. tapping "Scan" in the parent app) and
+        // will allow one programmatic click here, skipping straight to the camera.
+        // If the browser blocks it (most will, silently, with no error), the
+        // tap-anywhere capture card stays visible as the guaranteed fallback.
+        try { triggerCapture(); } catch(e) {}
       } else {
         requestCamera();
       }
